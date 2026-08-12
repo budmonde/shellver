@@ -27,7 +27,7 @@ function global:_ShellverGetComponent {
     return $value
 }
 
-function global:_ShellverGetCurrent {
+function global:Get-ShellverCurrent {
     $stateDirectory = _ShellverGetStateDirectory
     $common = _ShellverGetComponent (Join-Path $stateDirectory 'common')
     $localGeneration = _ShellverGetComponent (Join-Path $stateDirectory 'local')
@@ -35,38 +35,10 @@ function global:_ShellverGetCurrent {
     return "common:$common|local:$localGeneration|machine:$machine"
 }
 
-function global:_ShellverIsStale {
-    return $env:SHELLVER -cne (_ShellverGetCurrent)
-}
-
-function global:_ShellverPrintWarning {
-    if ($env:NO_COLOR) {
-        [Console]::WriteLine('[shellver stale]')
-    } else {
-        [Console]::WriteLine("$([char]27)[31m[shellver stale]$([char]27)[0m")
-    }
+function global:Test-ShellverStale {
+    return $env:SHELLVER -cne (Get-ShellverCurrent)
 }
 
 if (-not (Test-Path Env:SHELLVER)) {
-    $env:SHELLVER = _ShellverGetCurrent
-}
-
-if (-not $global:_SHELLVER_POWERSHELL_HOOKED) {
-    $global:_ShellverInnerPrompt = (Get-Item Function:\prompt).ScriptBlock
-    function global:prompt {
-        $shellverLastSuccess = $?
-        $shellverLastExitCode = $global:LASTEXITCODE
-        if (_ShellverIsStale) {
-            _ShellverPrintWarning
-        }
-        $global:LASTEXITCODE = $shellverLastExitCode
-        if ($shellverLastSuccess) {
-            $null = $true
-            & $global:_ShellverInnerPrompt
-        } else {
-            Write-Error 'shellver-status-sentinel' -ErrorAction SilentlyContinue
-            & $global:_ShellverInnerPrompt
-        }
-    }
-    $global:_SHELLVER_POWERSHELL_HOOKED = $true
+    $env:SHELLVER = Get-ShellverCurrent
 }

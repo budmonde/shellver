@@ -27,7 +27,13 @@ _shellver_initialize() {
     fi
 }
 
-_shellver_is_stale() {
+shellver_current() {
+    _shellver_load_current
+    printf '%s\n' "$_SHELLVER_CURRENT"
+    unset _SHELLVER_CURRENT
+}
+
+shellver_is_stale() {
     _shellver_load_current
     if [ "${SHELLVER-}" = "$_SHELLVER_CURRENT" ]; then
         unset _SHELLVER_CURRENT
@@ -37,31 +43,4 @@ _shellver_is_stale() {
     return 0
 }
 
-_shellver_print_warning() {
-    if [ -n "${NO_COLOR-}" ] || [ ! -t 1 ]; then
-        printf '[shellver stale]\n'
-    else
-        printf '\033[31m[shellver stale]\033[0m\n'
-    fi
-}
-
-_shellver_prompt_hook() {
-    local shellver_status=$?
-    if _shellver_is_stale; then
-        _shellver_print_warning
-    fi
-    return "$shellver_status"
-}
-
 _shellver_initialize
-if [ "${_SHELLVER_BASH_HOOKED-}" != 1 ]; then
-    case "$(declare -p PROMPT_COMMAND 2>/dev/null)" in
-        'declare -a '*|'declare -A '*)
-            PROMPT_COMMAND=(_shellver_prompt_hook "${PROMPT_COMMAND[@]}")
-            ;;
-        *)
-            PROMPT_COMMAND="_shellver_prompt_hook${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
-            ;;
-    esac
-    _SHELLVER_BASH_HOOKED=1
-fi

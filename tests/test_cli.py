@@ -94,12 +94,21 @@ class ShellverCliTests(unittest.TestCase):
         self.assertEqual("common:1|local:-|machine:machine-a", result.stdout.strip())
 
     def test_init_emits_self_contained_shell_integrations(self) -> None:
-        for shell in ("bash", "zsh", "powershell"):
+        capabilities = {
+            "bash": "shellver_is_stale",
+            "zsh": "shellver_is_stale",
+            "powershell": "Test-ShellverStale",
+        }
+        for shell, capability in capabilities.items():
             with self.subTest(shell=shell):
                 result = self.run_shellver("init", shell)
                 self.assertEqual(0, result.returncode)
                 self.assertIn("SHELLVER", result.stdout)
-                self.assertIn("[shellver stale]", result.stdout)
+                self.assertIn(capability, result.stdout)
+                self.assertNotIn("[shellver stale]", result.stdout)
+                self.assertNotIn("PROMPT_COMMAND", result.stdout)
+                self.assertNotIn("add-zsh-hook", result.stdout)
+                self.assertNotIn("function global:prompt", result.stdout)
                 self.assertNotIn(str(PROJECT_ROOT), result.stdout)
                 self.assertNotIn("python", result.stdout.lower())
                 self.assertNotIn("git ", result.stdout.lower())

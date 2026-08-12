@@ -27,23 +27,31 @@ eval "$hook_code"
     print -u2 'FAIL: existing precmd changed'
     exit 1
 }
-[[ "${#precmd_functions[(I)_shellver_prompt_hook]}" -eq 1 ]] || {
-    print -u2 'FAIL: hook was registered more than once'
+[[ "${#precmd_functions[(I)_shellver_prompt_hook]}" -eq 0 ]] || {
+    print -u2 'FAIL: init registered a prompt hook'
     exit 1
 }
+[[ "$(shellver_current)" == "$SHELLVER" ]] || {
+    print -u2 'FAIL: current-generation function mismatch'
+    exit 1
+}
+if shellver_is_stale; then
+    print -u2 'FAIL: current shell reported stale'
+    exit 1
+fi
 
 printf '2\n' > "$XDG_STATE_HOME/shellver/common"
 set +e
-stale_output="$(false; _shellver_prompt_hook)"
-hook_status=$?
+stale_output="$(shellver_is_stale)"
+stale_status=$?
 set -e
-[[ "$stale_output" == '[shellver stale]' ]] || {
-    print -u2 "FAIL: stale hook mismatch: $stale_output"
+[[ -z "$stale_output" ]] || {
+    print -u2 "FAIL: staleness predicate produced output: $stale_output"
     exit 1
 }
-[[ "$hook_status" -eq 1 ]] || {
-    print -u2 "FAIL: prior status was not preserved: $hook_status"
+[[ "$stale_status" -eq 0 ]] || {
+    print -u2 'FAIL: stale shell reported current'
     exit 1
 }
 
-print 'PASS: shellver Zsh hook'
+print 'PASS: shellver Zsh capabilities'

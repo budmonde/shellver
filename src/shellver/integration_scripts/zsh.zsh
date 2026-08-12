@@ -26,7 +26,13 @@ _shellver_initialize() {
     fi
 }
 
-_shellver_is_stale() {
+shellver_current() {
+    _shellver_load_current
+    print -r -- "$_SHELLVER_CURRENT"
+    unset _SHELLVER_CURRENT
+}
+
+shellver_is_stale() {
     _shellver_load_current
     if [[ "${SHELLVER-}" == "$_SHELLVER_CURRENT" ]]; then
         unset _SHELLVER_CURRENT
@@ -36,25 +42,4 @@ _shellver_is_stale() {
     return 0
 }
 
-_shellver_print_warning() {
-    if [[ -n "${NO_COLOR-}" || ! -t 1 ]]; then
-        print -r -- '[shellver stale]'
-    else
-        print -r -- $'\e[31m[shellver stale]\e[0m'
-    fi
-}
-
-_shellver_prompt_hook() {
-    local shellver_status=$?
-    if _shellver_is_stale; then
-        _shellver_print_warning
-    fi
-    return "$shellver_status"
-}
-
 _shellver_initialize
-if [[ "${_SHELLVER_ZSH_HOOKED-}" != 1 ]]; then
-    autoload -Uz add-zsh-hook
-    add-zsh-hook precmd _shellver_prompt_hook
-    typeset -g _SHELLVER_ZSH_HOOKED=1
-fi

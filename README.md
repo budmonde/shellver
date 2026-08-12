@@ -41,8 +41,9 @@ python -m pip install .
 
 ## Shell Integration
 
-Evaluate the generated integration once after the shell's prompt and local overrides are defined.
-The generated pre-prompt hook performs native file reads and does not launch Python or Git.
+Evaluate the generated integration once during interactive shell setup.
+The generated code initializes the inherited snapshot and exposes native query functions.
+It does not install a prompt hook, wrap an existing prompt, or render a warning.
 
 ```bash
 eval "$(shellver init bash)"
@@ -56,8 +57,29 @@ eval "$(shellver init zsh)"
 Invoke-Expression (& shellver init powershell | Out-String)
 ```
 
-The hook prints `[shellver stale]` before the normal prompt when the inherited and current generations differ.
-Set `NO_COLOR` to disable ANSI coloring.
+The Bash and Zsh integrations expose `shellver_current` and `shellver_is_stale`.
+The PowerShell integration exposes `Get-ShellverCurrent` and `Test-ShellverStale`.
+The current-generation functions print or return the current composite value.
+The staleness predicates succeed or return `$true` when the inherited snapshot differs from current state.
+
+Prompt presentation belongs to the calling configuration.
+For example, a Bash prompt may choose its own text, color, and placement:
+
+```bash
+if shellver_is_stale; then
+    printf '\033[31mrestart shell\033[0m\n'
+fi
+```
+
+A PowerShell prompt can make the same choice independently:
+
+```powershell
+if (Test-ShellverStale) {
+    '[restart shell]'
+}
+```
+
+The native query functions read the state files in-process and do not launch Python or Git.
 
 ## Commands
 
@@ -71,7 +93,7 @@ It refuses to replace a symbolic link at that path.
 
 ## Tests
 
-Run the standard-library tests and native hook contracts:
+Run the standard-library tests and native integration contracts:
 
 ```bash
 PYTHONPATH=src python -m unittest discover -s tests -p 'test_*.py'
