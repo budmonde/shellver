@@ -3,12 +3,15 @@
 set -e
 
 PROJECT_ROOT="${0:A:h:h}"
-test_state_root="$(mktemp -d)"
-trap 'rm -rf -- "$test_state_root"' EXIT
-export XDG_STATE_HOME="$test_state_root"
+test_root="$(mktemp -d)"
+trap 'rm -rf -- "$test_root"' EXIT
+export XDG_CONFIG_HOME="$test_root/config"
+export XDG_STATE_HOME="$test_root/state"
 export NO_COLOR=1
+mkdir -p "$XDG_CONFIG_HOME/shellver"
 mkdir -p "$XDG_STATE_HOME/shellver"
-printf '1\n' > "$XDG_STATE_HOME/shellver/common"
+printf '1\n' > "$XDG_CONFIG_HOME/shellver/common"
+printf '7\n' > "$XDG_STATE_HOME/shellver/machine"
 
 function precmd() {
     print 'existing'
@@ -19,7 +22,7 @@ hook_code="$(PYTHONPATH="$PROJECT_ROOT/src" python3 -m shellver init zsh)"
 eval "$hook_code"
 eval "$hook_code"
 
-[[ "$SHELLVER" == 'common:1|local:-|machine:-' ]] || {
+[[ "$SHELLVER" == 'common:1|machine:7' ]] || {
     print -u2 'FAIL: initial snapshot mismatch'
     exit 1
 }
@@ -40,7 +43,7 @@ if shellver_is_stale; then
     exit 1
 fi
 
-printf '2\n' > "$XDG_STATE_HOME/shellver/common"
+printf '2\n' > "$XDG_CONFIG_HOME/shellver/common"
 set +e
 stale_output="$(shellver_is_stale)"
 stale_status=$?
@@ -51,6 +54,20 @@ set -e
 }
 [[ "$stale_status" -eq 0 ]] || {
     print -u2 'FAIL: stale shell reported current'
+    exit 1
+}
+
+printf '99\n' > "$XDG_CONFIG_HOME/shellver/machine"
+set +e
+reserved_error="$(shellver_current 2>&1 >/dev/null)"
+reserved_status=$?
+set -e
+[[ "$reserved_status" -ne 0 ]] || {
+    print -u2 'FAIL: reserved machine generation was accepted'
+    exit 1
+}
+[[ "$reserved_error" == *"reserved generation name 'machine'"* ]] || {
+    print -u2 'FAIL: reserved-name error mismatch'
     exit 1
 }
 

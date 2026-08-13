@@ -5,15 +5,21 @@ It does not reload or mutate the current shell environment.
 
 ## State Agreement
 
-Shellver reads three first-line values under `${XDG_STATE_HOME:-~/.local/state}/shellver/`:
+Shellver reads named generation files under `${XDG_CONFIG_HOME:-$HOME/.config}/shellver/`.
+Generation names are lowercase letters, digits, periods, underscores, and hyphens; the first character must be a letter or digit.
+Each visible entry must be a file or a link to a file whose first line is a non-negative integer.
+Shellver discovers the entries generically and orders them by name.
 
-- `common` identifies shared shell configuration.
-- `local` identifies an optional scoped overlay.
-- `machine` identifies host-local installation state.
+`machine` is reserved and must not appear in the configuration directory.
+Shellver reads that generation exclusively from the regular file `${XDG_STATE_HOME:-$HOME/.local/state}/shellver/machine`.
+A configuration entry named `machine` is reported as a misconfiguration.
 
-Shell initialization exports their composite value as `SHELLVER`.
+Shell initialization exports the sorted named generations followed by the machine generation as `SHELLVER`.
 Child shells preserve an inherited value so descendants of a stale shell cannot silently declare inherited environment state current.
-Missing or empty components contribute `-`.
+Missing, empty, or unreadable generation files contribute `-`.
+
+Shellver does not assign meaning to configuration generation names.
+The caller owns their files and links, decides when to bump them, and chooses how to present staleness.
 
 ## Installation
 
@@ -79,7 +85,7 @@ if (Test-ShellverStale) {
 }
 ```
 
-The native query functions read the state files in-process and do not launch Python or Git.
+The native query functions read the configuration and state files in-process and do not launch Python or Git.
 
 ## Commands
 
@@ -88,8 +94,10 @@ The status command exits with code `1` when stale.
 
 `shellver current` prints only the current composite generation.
 
-`shellver bump-machine` atomically replaces the regular machine generation with a new opaque token.
-It refuses to replace a symbolic link at that path.
+`shellver bump <name>` increments a generation atomically.
+For configuration generations, Shellver updates the resolved file while preserving a configuration link.
+`shellver bump machine` creates or increments the regular state file and refuses to replace a symbolic link at that path.
+Its first run converts the opaque machine token written by Shellver 0.2 to integer generation `1`.
 
 ## Tests
 
