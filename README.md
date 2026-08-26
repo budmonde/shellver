@@ -91,6 +91,8 @@ The native query functions read the configuration and state files in-process and
 
 `shellver` and `shellver status` print the loaded generation, current generation, and status.
 The status command exits with code `1` when stale.
+Pass a generation name to compare only that component, such as `shellver status common` or `shellver status machine`.
+The component form prints its generation name, loaded value, current value, and `current` or `stale` status.
 
 `shellver current` prints only the current composite generation.
 

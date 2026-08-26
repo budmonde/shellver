@@ -78,19 +78,43 @@ def config_generation_paths() -> list[Path]:
 
 
 def current_generation() -> str:
-    components = [
-        f"{path.name}:{read_generation(path)}" for path in config_generation_paths()
-    ]
-    components.append(f"machine:{read_generation(state_directory() / 'machine')}")
-    return "|".join(components)
+    return "|".join(
+        f"{name}:{value}" for name, value in current_generations().items()
+    )
 
 
-def show_status() -> int:
+def current_generations() -> dict[str, str]:
+    generations = {
+        path.name: read_generation(path) for path in config_generation_paths()
+    }
+    generations["machine"] = read_generation(state_directory() / "machine")
+    return generations
+
+
+def loaded_generations(value: str) -> dict[str, str]:
+    generations = {}
+    for component in value.split("|"):
+        name, separator, generation = component.partition(":")
+        if separator and name:
+            generations[name] = generation
+    return generations
+
+
+def show_status(generation: str | None = None) -> int:
     loaded = os.environ.get("SHELLVER", "")
-    current = current_generation()
-    stale = loaded != current
-    print(f"loaded:  {loaded}")
-    print(f"current: {current}")
+    current = current_generations()
+    if generation is None:
+        current_value = "|".join(f"{name}:{value}" for name, value in current.items())
+        loaded_value = loaded
+    else:
+        if generation not in current:
+            raise ShellverError(f"generation does not exist: {generation}")
+        current_value = current[generation]
+        loaded_value = loaded_generations(loaded).get(generation, "-")
+        print(f"generation: {generation}")
+    stale = loaded_value != current_value
+    print(f"loaded:  {loaded_value}")
+    print(f"current: {current_value}")
     print(f"status:  {'stale' if stale else 'current'}")
     return int(stale)
 
@@ -168,7 +192,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="shellver")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     subparsers = parser.add_subparsers(dest="action")
-    subparsers.add_parser("status", help="compare the loaded and current generations")
+    status_parser = subparsers.add_parser(
+        "status", help="compare the loaded and current generations"
+    )
+    status_parser.add_argument(
+        "generation", nargs="?", help="compare one named generation"
+    )
     subparsers.add_parser("current", help="print the current composite generation")
     bump_parser = subparsers.add_parser("bump", help="increment a named generation")
     bump_parser.add_argument("name")
@@ -188,6 +217,8 @@ def main() -> int:
         if arguments.action == "init":
             print(integration_for(arguments.shell), end="")
             return 0
+        if arguments.action == "status":
+            return show_status(arguments.generation)
         return show_status()
     except ShellverError as error:
         print(f"shellver: {error}", file=sys.stderr)

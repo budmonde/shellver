@@ -78,6 +78,31 @@ class ShellverCliTests(unittest.TestCase):
         self.assertEqual(1, stale.returncode)
         self.assertIn("status:  stale", stale.stdout)
 
+    def test_status_compares_one_generation(self) -> None:
+        generation = "common:1|local:4|machine:7"
+
+        current = self.run_shellver("status", "common", loaded=generation)
+        stale = self.run_shellver(
+            "status", "machine", loaded="common:1|local:4|machine:0"
+        )
+
+        self.assertEqual(0, current.returncode)
+        self.assertIn("generation: common", current.stdout)
+        self.assertIn("loaded:  1", current.stdout)
+        self.assertIn("current: 1", current.stdout)
+        self.assertIn("status:  current", current.stdout)
+        self.assertEqual(1, stale.returncode)
+        self.assertIn("generation: machine", stale.stdout)
+        self.assertIn("loaded:  0", stale.stdout)
+        self.assertIn("current: 7", stale.stdout)
+        self.assertIn("status:  stale", stale.stdout)
+
+    def test_status_rejects_unknown_generation(self) -> None:
+        result = self.run_shellver("status", "missing")
+
+        self.assertEqual(2, result.returncode)
+        self.assertIn("generation does not exist: missing", result.stderr)
+
     def test_bump_machine_increments_state_generation(self) -> None:
         machine = self.state_directory / "machine"
 
