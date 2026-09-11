@@ -1,7 +1,7 @@
 # shellver
 
-Shellver tells long-lived interactive shells when their inherited environment is older than the currently installed shell configuration.
-It does not reload or mutate the current shell environment.
+Shellver tells long-lived interactive shells when the shell configuration generation they loaded is older than the currently installed shell configuration.
+It does not reload the caller's shell configuration or mutate other environment state.
 
 ## State Agreement
 
@@ -14,9 +14,13 @@ Shellver discovers the entries generically and orders them by name.
 Shellver reads that generation exclusively from the regular file `${XDG_STATE_HOME:-$HOME/.local/state}/shellver/machine`.
 A configuration entry named `machine` is reported as a misconfiguration.
 
-Shell initialization exports the sorted named generations followed by the machine generation as `SHELLVER`.
-Child shells preserve an inherited value so descendants of a stale shell cannot silently declare inherited environment state current.
+Shell initialization exports the sorted named generations followed by the machine generation as `SHELLVER`, replacing any value inherited from a parent process.
+Evaluating the integration establishes a freshness boundary for the current interactive shell, so a new shell records the current generation even when its parent shell or terminal multiplexer loaded an older generation.
+An existing shell retains its loaded generation and becomes stale when the configured generations change.
 Missing, empty, or unreadable generation files contribute `-`.
+
+The generation records which configuration version initialized the shell.
+It does not prove that the shell's complete environment equals a clean environment or detect arbitrary environment-variable changes.
 
 Shellver does not assign meaning to configuration generation names.
 The caller owns their files and links, decides when to bump them, and chooses how to present staleness.
@@ -47,8 +51,8 @@ python -m pip install .
 
 ## Shell Integration
 
-Evaluate the generated integration once during interactive shell setup.
-The generated code initializes the inherited snapshot and exposes native query functions.
+Evaluate the generated integration once during interactive shell setup, after the caller's environment configuration has loaded.
+The generated code records the current configuration generation for that shell and exposes native query functions.
 It does not install a prompt hook, wrap an existing prompt, or render a warning.
 
 ```bash
@@ -66,7 +70,7 @@ Invoke-Expression (& shellver init powershell | Out-String)
 The Bash and Zsh integrations expose `shellver_current` and `shellver_is_stale`.
 The PowerShell integration exposes `Get-ShellverCurrent` and `Test-ShellverStale`.
 The current-generation functions print or return the current composite value.
-The staleness predicates succeed or return `$true` when the inherited snapshot differs from current state.
+The staleness predicates succeed or return `$true` when the shell's loaded generation differs from current state.
 
 Prompt presentation belongs to the calling configuration.
 For example, a Bash prompt may choose its own text, color, and placement:

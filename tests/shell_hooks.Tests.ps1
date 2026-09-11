@@ -29,7 +29,7 @@ try {
     $env:PYTHONPATH = Join-Path $projectRoot 'src'
     $env:XDG_CONFIG_HOME = $configHome
     $env:XDG_STATE_HOME = $stateHome
-    Remove-Item Env:SHELLVER -ErrorAction SilentlyContinue
+    $env:SHELLVER = 'common:0|local:0|machine:0'
 
     function global:prompt {
         "inner:$($?):$global:LASTEXITCODE"
@@ -43,7 +43,7 @@ try {
     Invoke-Expression $hookCode
     Invoke-Expression $hookCode
 
-    Assert-Equal 'common:1|local:4|machine:7' $env:SHELLVER 'Initial snapshot mismatch'
+    Assert-Equal 'common:1|local:4|machine:7' $env:SHELLVER 'Inherited snapshot was not replaced'
     Assert-Equal $originalPrompt (Get-Item Function:\prompt).ScriptBlock.ToString() 'Init changed the prompt function'
     Assert-Equal $env:SHELLVER (Get-ShellverCurrent) 'Current-generation function mismatch'
     Assert-Equal $false (Test-ShellverStale) 'Current shell reported stale'

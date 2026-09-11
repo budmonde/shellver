@@ -17,13 +17,13 @@ function precmd() {
     print 'existing'
 }
 
-unset SHELLVER
+export SHELLVER='common:0|machine:0'
 hook_code="$(PYTHONPATH="$PROJECT_ROOT/src" python3 -m shellver init zsh)"
 eval "$hook_code"
 eval "$hook_code"
 
 [[ "$SHELLVER" == 'common:1|machine:7' ]] || {
-    print -u2 'FAIL: initial snapshot mismatch'
+    print -u2 'FAIL: inherited snapshot was not replaced'
     exit 1
 }
 [[ "$(precmd)" == 'existing' ]] || {

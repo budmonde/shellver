@@ -51,11 +51,9 @@ _shellver_load_current() {
 }
 
 _shellver_initialize() {
-    if (( ! ${+SHELLVER} )); then
-        _shellver_load_current || return
-        export SHELLVER="$_SHELLVER_CURRENT"
-        unset _SHELLVER_CURRENT
-    fi
+    _shellver_load_current || return
+    export SHELLVER="$_SHELLVER_CURRENT"
+    unset _SHELLVER_CURRENT
 }
 
 shellver_current() {

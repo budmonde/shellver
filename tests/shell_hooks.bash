@@ -24,12 +24,12 @@ existing_prompt() {
 
 PROMPT_COMMAND=existing_prompt
 original_prompt_command="$PROMPT_COMMAND"
-unset SHELLVER
+export SHELLVER='common:0|local:0|machine:0'
 hook_code="$(PYTHONPATH="$PROJECT_ROOT/src" python3 -m shellver init bash)"
 eval "$hook_code"
 eval "$hook_code"
 
-[[ "$SHELLVER" == 'common:1|local:4|machine:7' ]] || fail 'initial snapshot mismatch'
+[[ "$SHELLVER" == 'common:1|local:4|machine:7' ]] || fail 'inherited snapshot was not replaced'
 [[ "$PROMPT_COMMAND" == "$original_prompt_command" ]] || fail 'init changed PROMPT_COMMAND'
 [[ "$(shellver_current)" == "$SHELLVER" ]] || fail 'current-generation function mismatch'
 if shellver_is_stale; then

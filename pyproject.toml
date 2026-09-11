@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "shellver"
-version = "0.3.0"
-description = "Detect stale long-lived shell environments"
+version = "0.4.0"
+description = "Detect stale interactive shell configuration generations"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }

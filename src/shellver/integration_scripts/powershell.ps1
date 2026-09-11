@@ -70,6 +70,4 @@ function global:Test-ShellverStale {
     return $env:SHELLVER -cne (Get-ShellverCurrent)
 }
 
-if (-not (Test-Path Env:SHELLVER)) {
-    $env:SHELLVER = Get-ShellverCurrent
-}
+$env:SHELLVER = Get-ShellverCurrent
